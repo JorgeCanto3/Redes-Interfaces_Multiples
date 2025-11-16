@@ -183,6 +183,8 @@ typedef unsigned char byte;
 
    ConfigurarOrigenEther(psehHeaderEther, sirDatos);
 
+   ConfigurarDestinoEther(psehHeaderEther, sbmac);
+
    iLenHeader = sizeof(struct ether_header); // Guardamos la longitud del header
 
    //Esto podria ser una función

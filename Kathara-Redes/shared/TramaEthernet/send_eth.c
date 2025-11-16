@@ -105,6 +105,9 @@
               psehHeaderEther->ether_dhost[2], psehHeaderEther->ether_dhost[3],
               psehHeaderEther->ether_dhost[4], psehHeaderEther->ether_dhost[5]);
 
+
+  //Configuración el mensaje de la trama, y del socket, a si mismo se manda un Broadcast por el Socket
+
    iLenHeader = sizeof(struct ether_header);
 
 
