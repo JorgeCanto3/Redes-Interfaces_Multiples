@@ -70,30 +70,39 @@
    /*4         bytes Frame Check Sequence                                   */
    /*Total sin contar bytes de sincronizacion, va de 64 a 1518 bytes.       */
    
+
    memset(sbBufferEther, 0, BUF_SIZ);  /*Llenamos con 0 el buffer de datos (payload)*/
    /*Direccion MAC Origen*/
+
+  ConfigurarOrigen(pseheaderEther, sirDatos);
+
+   /*
    psehHeaderEther->ether_shost[0] = ((uint8_t *)&sirDatos.ifr_hwaddr.sa_data)[0];
    psehHeaderEther->ether_shost[1] = ((uint8_t *)&sirDatos.ifr_hwaddr.sa_data)[1];
    psehHeaderEther->ether_shost[2] = ((uint8_t *)&sirDatos.ifr_hwaddr.sa_data)[2];
    psehHeaderEther->ether_shost[3] = ((uint8_t *)&sirDatos.ifr_hwaddr.sa_data)[3];
    psehHeaderEther->ether_shost[4] = ((uint8_t *)&sirDatos.ifr_hwaddr.sa_data)[4];
    psehHeaderEther->ether_shost[5] = ((uint8_t *)&sirDatos.ifr_hwaddr.sa_data)[5];
-
-
+  */
+  //  Broadcaast Factorizado
   //broadcast - asegurarnos de usar 0xFF como unsigned char
-   psehHeaderEther->ether_dhost[0] = (unsigned char)0xFF;
-   psehHeaderEther->ether_dhost[1] = (unsigned char)0xFF;
-   psehHeaderEther->ether_dhost[2] = (unsigned char)0xFF;
-   psehHeaderEther->ether_dhost[3] = (unsigned char)0xFF;
-   psehHeaderEther->ether_dhost[4] = (unsigned char)0xFF;
-   psehHeaderEther->ether_dhost[5] = (unsigned char)0xFF;
-   
-   printf("MAC broadcast configurada: %02x:%02x:%02x:%02x:%02x:%02x\n",
-          psehHeaderEther->ether_dhost[0], psehHeaderEther->ether_dhost[1],
-          psehHeaderEther->ether_dhost[2], psehHeaderEther->ether_dhost[3],
-          psehHeaderEther->ether_dhost[4], psehHeaderEther->ether_dhost[5]);
+  CrearBroadcast(psehHeaderEther)
 
-    iLenHeader = sizeof(struct ether_header);
+  /*
+  psehHeaderEther->ether_dhost[0] = (unsigned char)0xFF;
+  psehHeaderEther->ether_dhost[1] = (unsigned char)0xFF;
+  psehHeaderEther->ether_dhost[2] = (unsigned char)0xFF;
+  psehHeaderEther->ether_dhost[3] = (unsigned char)0xFF;
+  psehHeaderEther->ether_dhost[4] = (unsigned char)0xFF;
+  psehHeaderEther->ether_dhost[5] = (unsigned char)0xFF;
+  */
+
+    printf("MAC broadcast configurada: %02x:%02x:%02x:%02x:%02x:%02x\n",
+              psehHeaderEther->ether_dhost[0], psehHeaderEther->ether_dhost[1],
+              psehHeaderEther->ether_dhost[2], psehHeaderEther->ether_dhost[3],
+              psehHeaderEther->ether_dhost[4], psehHeaderEther->ether_dhost[5]);
+
+   iLenHeader = sizeof(struct ether_header);
 
 
    for (i=0; ((mv_name[i])&&(i<ETHER_TYPE)); i++) sbBufferEther[iLenHeader+i] = mv_name[i];
@@ -105,6 +114,7 @@
        sbBufferEther[iLenHeader+i] = ' ';  i++;
      }
    }
+
    iLenHeader = iLenHeader + i;   
    /*Tipo de protocolo o la longitud del paquete*/
    psehHeaderEther->ether_type = htons(ETHER_TYPE); 
@@ -118,13 +128,19 @@
    socket_address.sll_protocol = htons(ETH_P_ALL);
    socket_address.sll_ifindex = iIndex;
    socket_address.sll_halen = ETH_ALEN;
+
+   ConfigurarBroadcastD_Sock(socket_address)
+   
+   /*
    socket_address.sll_addr[0] = 0xFF;
    socket_address.sll_addr[1] = 0xFF;
    socket_address.sll_addr[2] = 0xFF;
    socket_address.sll_addr[3] = 0xFF;
    socket_address.sll_addr[4] = 0xFF;
    socket_address.sll_addr[5] = 0xFF;
+   */
 
+   
    printf("\nEnviando broadcast solicitando MAC de %s...\n", mv_name);
    iLen = sendto(sockfd, sbBufferEther, iLenTotal, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll));
 
@@ -136,68 +152,80 @@
    printf("Esperando respuesta...\n");
    memset(sbBufferEther, 0, BUF_SIZ);  
 
-   /* Esperamos la respuesta implementando un timeout */
-   {
-     int max_wait_sec = 5; 
-     fd_set readfds;
-     struct timeval tv;
-     int rv;
-     
-     FD_ZERO(&readfds);
-     FD_SET(sockfd, &readfds);
-     tv.tv_sec = max_wait_sec;
-     tv.tv_usec = 0;
-     
-     rv = select(sockfd + 1, &readfds, NULL, NULL, &tv);
-     if (rv == -1) {
-       perror("select");
-       exit(1);
-     } else if (rv == 0) {
-       printf("Timeout esperando respuesta (%d s)\n", max_wait_sec);
-       exit(1);
-     } else {
-       iTramaLen = recvfrom(sockfd, sbBufferEther, BUF_SIZ, 0, &saddr, (socklen_t *)(&saddr_size));
-       if (iTramaLen < 0) {
-         perror("recvfrom");
-         exit(1);
-       }
-       
-       /*Direccion MAC destino: iSacarMAC devuelve los bytes (ether_shost) */
-       char* mac_recibida = iSacarMAC(sbBufferEther);
-       /*Copiamos directamente los 6 bytes de la MAC recibida*/
-       memcpy(sbMac, mac_recibida, LEN_MAC);
-       printf("MAC recibida: %02x:%02x:%02x:%02x:%02x:%02x\n",
-         (unsigned char)sbMac[0], (unsigned char)sbMac[1], (unsigned char)sbMac[2],
-         (unsigned char)sbMac[3], (unsigned char)sbMac[4], (unsigned char)sbMac[5]);
-       free(mac_recibida);
-     }
-   }
 
-   // Configuramos la MAC destino para el mensaje final
-  // Reiniciamos la trama
-  memset(sbBufferEther, 0, BUF_SIZ);
-  psehHeaderEther = (struct ether_header *)sbBufferEther;
+    /* ------------------------------ Esta parte se queda? ------------------------
+    
+    Esperamos la respuesta implementando un timeout 
+    {
+      int max_wait_sec = 5; 
+      fd_set readfds;
+      struct timeval tv;
+      int rv;
+      
+      FD_ZERO(&readfds);
+      FD_SET(sockfd, &readfds);
+      tv.tv_sec = max_wait_sec;
+      tv.tv_usec = 0;
+      
+      rv = select(sockfd + 1, &readfds, NULL, NULL, &tv);
+      if (rv == -1) {
+        perror("select");
+        exit(1);
+      } else if (rv == 0) {
+        printf("Timeout esperando respuesta (%d s)\n", max_wait_sec);
+        exit(1);
+      } else {
+        iTramaLen = recvfrom(sockfd, sbBufferEther, BUF_SIZ, 0, &saddr, (socklen_t *)(&saddr_size));
+        if (iTramaLen < 0) {
+          perror("recvfrom");
+          exit(1);
+        }
+        
+        //Direccion MAC destino: iSacarMAC devuelve los bytes (ether_shost) 
+        char* mac_recibida = iSacarMAC(sbBufferEther);
+        //Copiamos directamente los 6 bytes de la MAC recibida
+        memcpy(sbMac, mac_recibida, LEN_MAC);
+        printf("MAC recibida: %02x:%02x:%02x:%02x:%02x:%02x\n",
+          (unsigned char)sbMac[0], (unsigned char)sbMac[1], (unsigned char)sbMac[2],
+          (unsigned char)sbMac[3], (unsigned char)sbMac[4], (unsigned char)sbMac[5]);
+        free(mac_recibida);
+      }
+    }
+  */
 
-  // Configuramos la MAC origen (la de la interfaz)
-  psehHeaderEther->ether_shost[0] = (byte)(sirDatos.ifr_hwaddr.sa_data[0]);
-  psehHeaderEther->ether_shost[1] = (byte)(sirDatos.ifr_hwaddr.sa_data[1]);
-  psehHeaderEther->ether_shost[2] = (byte)(sirDatos.ifr_hwaddr.sa_data[2]);
-  psehHeaderEther->ether_shost[3] = (byte)(sirDatos.ifr_hwaddr.sa_data[3]);
-  psehHeaderEther->ether_shost[4] = (byte)(sirDatos.ifr_hwaddr.sa_data[4]);
-  psehHeaderEther->ether_shost[5] = (byte)(sirDatos.ifr_hwaddr.sa_data[5]);
 
+ // Configuramos la MAC destino para el mensaje final
+// Reiniciamos la trama
+  ReinciarTrama(sbBufferEther, psehHeaderEther);
+  
+  /*
+    memset(sbBufferEther, 0, BUF_SIZ);
+    psehHeaderEther = (struct ether_header *)sbBufferEther;
+  */
+
+  /*
+     // Configuramos la MAC origen (la de la interfaz)
+     psehHeaderEther->ether_shost[0] = (byte)(sirDatos.ifr_hwaddr.sa_data[0]);
+     psehHeaderEther->ether_shost[1] = (byte)(sirDatos.ifr_hwaddr.sa_data[1]);
+     psehHeaderEther->ether_shost[2] = (byte)(sirDatos.ifr_hwaddr.sa_data[2]);
+     psehHeaderEther->ether_shost[3] = (byte)(sirDatos.ifr_hwaddr.sa_data[3]);
+     psehHeaderEther->ether_shost[4] = (byte)(sirDatos.ifr_hwaddr.sa_data[4]);
+     psehHeaderEther->ether_shost[5] = (byte)(sirDatos.ifr_hwaddr.sa_data[5]);
+  */
+
+  
   // Configuramos la MAC destino (la que recibimos)
   memcpy(psehHeaderEther->ether_dhost, sbMac, 6);
-   /*Antes de colocar la longitud de la trama o ETHER_TYPE, colocamos*/
-   /*el payload que basicamente es rellenar de letras el mensaje*/
+  /*Antes de colocar la longitud de la trama o ETHER_TYPE, colocamos*/
+  /*el payload que basicamente es rellenar de letras el mensaje*/
 
-   iLenHeader = sizeof(struct ether_header);
-   if (strlen(scMsj)>ETHER_TYPE)
-   {
-     printf ("El mensaje debe ser mas corto o incremente ETHER_TYPE\n");
-     close (sockfd);
-     exit (1);
-   }
+  iLenHeader = sizeof(struct ether_header);
+  if (strlen(scMsj) > ETHER_TYPE)
+  {
+    printf("El mensaje debe ser mas corto o incremente ETHER_TYPE\n");
+    close(sockfd);
+    exit(1);
+  }
    
    for (i=0; ((scMsj[i])&&(i<ETHER_TYPE)); i++) sbBufferEther[iLenHeader+i] = scMsj[i];
 
@@ -218,15 +246,20 @@
    /*Procedemos al envio de la trama*/
    socket_address.sll_ifindex = iIndex;
    socket_address.sll_halen = ETH_ALEN;
-   socket_address.sll_addr[0] = sbMac[0];
-   socket_address.sll_addr[1] = sbMac[1];
-   socket_address.sll_addr[2] = sbMac[2];
-   socket_address.sll_addr[3] = sbMac[3];
-   socket_address.sll_addr[4] = sbMac[4];
-   socket_address.sll_addr[5] = sbMac[5];
-   
-   // Una vez que recibe la MAC, enviamos el mensaje chisyo
-   iLen = sendto(sockfd, sbBufferEther, iLenTotal, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll));
+
+   ConfigurarDestino(socket_address,sbmac)
+
+       /*
+       socket_address.sll_addr[0] = sbMac[0];
+       socket_address.sll_addr[1] = sbMac[1];
+       socket_address.sll_addr[2] = sbMac[2];
+       socket_address.sll_addr[3] = sbMac[3];
+       socket_address.sll_addr[4] = sbMac[4];
+       socket_address.sll_addr[5] = sbMac[5];
+       */
+
+       // Una vez que recibe la MAC, enviamos el mensaje chisyo
+       iLen = sendto(sockfd, sbBufferEther, iLenTotal, 0, (struct sockaddr *)&socket_address, sizeof(struct sockaddr_ll));
    if (iLen<0) printf("Send failed\n");
    printf ("\nContenido de la trama enviada:\n\n");
    vImprimeTrama (sbBufferEther);

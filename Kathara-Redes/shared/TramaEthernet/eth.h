@@ -86,7 +86,7 @@ typedef unsigned char byte;
    return (iFlag);
  }
 
-  char* iSacarMAC (char *psTrama)
+ char *iSacarMAC(char *psTrama)
  {
     struct ether_header *eh = (struct ether_header *)psTrama;
     char* mac = malloc(LEN_MAC * sizeof(char));
@@ -102,6 +102,59 @@ typedef unsigned char byte;
        mac[i] = eh->ether_shost[i];
     }
     return mac;
+ }
+
+ void CrearBroadcastEther(struct ether_header *psehHeaderEther)
+ {
+
+   for (int i = 0; i < LEN_MAC; i++)
+   {
+     psehHeaderEther->ether_dhost[i] = (unsigned char)0xFF;
+   }
+
+   printf("Broadcast Asignado a la MAC de destino!");
+
+
+  }
+
+
+  void ConfigurarOrigenEther(struct ether_header *psehHeaderEther, struct ifreq *sirDatos)
+  {
+   for (int i = 0; i < LEN_MAC; i++)
+   {
+     psehHeaderEther->ether_shost[i] = ((uint8_t *)&sirDatos.ifr_hwaddr.sa_data)[i];
+   }
+ 
+ }
+
+ void ConfigurarBroadcastD_Sock(struct sockaddr_ll *socket_address)
+ {
+
+   for (int i = 0; i < LEN_MAC; i++)
+   {
+
+     socket_address.sll_addr[i] = (unsigned char)0xFF;
+   }
+ }
+
+ void ConfigurarDestinoSock(struct sockaddr_ll *socket_address, byte sbmac)
+ {
+
+   for (int i = 0; i < LEN_MAC; i++){
+
+     socket_address.sll_addr[i] = sbMac[i];
+   }
+
+ }
+
+
+void ReinciarTrama(byte * sbBufferEther[BUF_SIZ], struct ether_header * psehHeaderEther){
+ 
+  {
+
+    memset(sbBufferEther, 0, BUF_SIZ);
+    psehHeaderEther =  (struct ether_header *)sbBufferEther
+  }
  }
 
 
@@ -122,6 +175,10 @@ typedef unsigned char byte;
     }
   }
   return iFlag;
+}
+
+void ArmarTrama(){
+  
 }
 
 int isBroadcast(char *psTrama){
