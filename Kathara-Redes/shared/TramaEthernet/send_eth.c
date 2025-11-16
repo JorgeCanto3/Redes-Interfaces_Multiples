@@ -77,7 +77,7 @@
   memset(sbBufferEther, 0, BUF_SIZ); 
   
   /*Direccion MAC Origen*/
-  ConfigurarOrigen(pseheaderEther, sirDatos);
+  configurarBroadcast_Ether(pseheaderEther, sirDatos);
 
    /*
    psehHeaderEther->ether_shost[0] = ((uint8_t *)&sirDatos.ifr_hwaddr.sa_data)[0];
@@ -89,22 +89,21 @@
   */
   //  Broadcaast Factorizado
   //broadcast - asegurarnos de usar 0xFF como unsigned char
-  CrearBroadcast(psehHeaderEther)
+  configurarBroadcast_Ether(psehHeaderEther)
 
-  /*
-  psehHeaderEther->ether_dhost[0] = (unsigned char)0xFF;
-  psehHeaderEther->ether_dhost[1] = (unsigned char)0xFF;
-  psehHeaderEther->ether_dhost[2] = (unsigned char)0xFF;
-  psehHeaderEther->ether_dhost[3] = (unsigned char)0xFF;
-  psehHeaderEther->ether_dhost[4] = (unsigned char)0xFF;
-  psehHeaderEther->ether_dhost[5] = (unsigned char)0xFF;
-  */
+      /*
+      psehHeaderEther->ether_dhost[0] = (unsigned char)0xFF;
+      psehHeaderEther->ether_dhost[1] = (unsigned char)0xFF;
+      psehHeaderEther->ether_dhost[2] = (unsigned char)0xFF;
+      psehHeaderEther->ether_dhost[3] = (unsigned char)0xFF;
+      psehHeaderEther->ether_dhost[4] = (unsigned char)0xFF;
+      psehHeaderEther->ether_dhost[5] = (unsigned char)0xFF;
+      */
 
-    printf("MAC broadcast configurada: %02x:%02x:%02x:%02x:%02x:%02x\n",
-              psehHeaderEther->ether_dhost[0], psehHeaderEther->ether_dhost[1],
-              psehHeaderEther->ether_dhost[2], psehHeaderEther->ether_dhost[3],
-              psehHeaderEther->ether_dhost[4], psehHeaderEther->ether_dhost[5]);
-
+      printf("MAC broadcast configurada: %02x:%02x:%02x:%02x:%02x:%02x\n",
+             psehHeaderEther->ether_dhost[0], psehHeaderEther->ether_dhost[1],
+             psehHeaderEther->ether_dhost[2], psehHeaderEther->ether_dhost[3],
+             psehHeaderEther->ether_dhost[4], psehHeaderEther->ether_dhost[5]);
 
   //Configuración el mensaje de la trama, y del socket, a si mismo se manda un Broadcast por el Socket
 
@@ -135,7 +134,7 @@
    socket_address.sll_ifindex = iIndex;
    socket_address.sll_halen = ETH_ALEN;
 
-   ConfigurarBroadcastD_Sock(socket_address)
+   configurarBroadcast_Socket(socket_address)
    
    /*
    socket_address.sll_addr[0] = 0xFF;
@@ -202,7 +201,7 @@
 
  // Configuramos la MAC destino para el mensaje final
 // Reiniciamos la trama
-   ConfigurarTrama(sbBuferr, psehHeaderEther, iLenHeader, scMsj, iIndex, iLenTotal,sbBufferEther,socket_address,sirDatos);
+   configurarTrama(sbBuferr, psehHeaderEther, iLenHeader, scMsj, iIndex, iLenTotal,sbBufferEther,socket_address,sirDatos);
 
    // ReinciarTrama(sbBufferEther, psehHeaderEther);
 

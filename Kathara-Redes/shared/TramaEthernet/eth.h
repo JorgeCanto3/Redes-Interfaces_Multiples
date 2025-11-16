@@ -104,7 +104,7 @@ typedef unsigned char byte;
     return mac;
  }
 
- void CrearBroadcastEther(struct ether_header *psehHeaderEther)
+ void configurarBroadcast_Ether(struct ether_header *psehHeaderEther)
  {
 
    for (int i = 0; i < LEN_MAC; i++)
@@ -128,7 +128,7 @@ typedef unsigned char byte;
 
   */
 
-  void ConfigurarOrigenEther(struct ether_header *psehHeaderEther, struct ifreq *sirDatos)
+  void configurarOrigen_Ether(struct ether_header *psehHeaderEther, struct ifreq *sirDatos)
   {
    for (int i = 0; i < LEN_MAC; i++)
    {
@@ -137,7 +137,7 @@ typedef unsigned char byte;
  
  }
 
- void ConfigurarDestinoEther(struct ether_header *psehHeaderEther, byte sbmac[6], )
+ void configurarDestino_Ether(struct ether_header *psehHeaderEther, byte sbmac[6], )
  {
 
    for (int i = 0; i < LEN_MAC; i++)
@@ -147,7 +147,7 @@ typedef unsigned char byte;
 
  }
 
- void ConfigurarBroadcast_Sock(struct sockaddr_ll *socket_address)
+ void configurarBroadcast_Socket(struct sockaddr_ll *socket_address)
  {
 
    for (int i = 0; i < LEN_MAC; i++)
@@ -157,7 +157,7 @@ typedef unsigned char byte;
    }
  }
 
- void ConfigurarDestinoSock(struct sockaddr_ll *socket_address, byte sbmac[6])
+ void configurarDestino_Socket(struct sockaddr_ll *socket_address, byte sbmac[6])
  {
 
    for (int i = 0; i < LEN_MAC; i++){
@@ -168,7 +168,7 @@ typedef unsigned char byte;
  }
 
 
-  void ReinciarTrama(byte *sbBufferEther[BUF_SIZ], struct ether_header *psehHeaderEther)
+  void reinciarTrama(byte *sbBufferEther[BUF_SIZ], struct ether_header *psehHeaderEther)
  {
 
    {
@@ -177,13 +177,13 @@ typedef unsigned char byte;
    }
  }
 
- void ConfigurarTrama(byte *sbBufferEther, struct ether_header *psehHeaderEther, struct ifreq sirDatos, byte sbmac[6], int *iLenHeader, char scMsj[], int iIndex, int *iLenTotal, (struct ether_header *)sbBufferEther, struct sockaddr_ll socket_address)
+ void configurarTrama(byte *sbBufferEther, struct ether_header *psehHeaderEther, struct ifreq sirDatos, byte sbmac[6], int *iLenHeader, char scMsj[], int iIndex, int *iLenTotal, (struct ether_header *)sbBufferEther, struct sockaddr_ll socket_address)
  {
-   ReiniciarTrama(sbBufferEther, psehHeaderEther);
+   reiniciarTrama(sbBufferEther, psehHeaderEther);
 
-   ConfigurarOrigenEther(psehHeaderEther, sirDatos);
+   configurarOrigen_Ether(psehHeaderEther, sirDatos);
 
-   ConfigurarDestinoEther(psehHeaderEther, sbmac);
+   configurarDestino_Ether(psehHeaderEther, sbmac);
 
    iLenHeader = sizeof(struct ether_header); // Guardamos la longitud del header
 
@@ -263,4 +263,3 @@ int isBroadcast(char *psTrama){
   printf(" -> %s\n", iFlag ? "SI ES BROADCAST" : "NO ES BROADCAST");
   return iFlag;
 }
-cd
