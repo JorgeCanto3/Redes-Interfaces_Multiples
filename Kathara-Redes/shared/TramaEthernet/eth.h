@@ -117,6 +117,16 @@ typedef unsigned char byte;
 
   }
 
+  /* 
+  No lo agregue pero podemos crearlo para no tener tanto codigo dentro de la Función ConfigurarTrama 
+  
+    ConfigurarSocket(struct sockaddr_ll socket_address){
+      socket_address.sll_ifindex = iIndex;
+      socket_address.sll_halen = ETH_ALEN;
+      ConfigurarDestinoSock(socke_address,sbmac)
+    }
+
+  */
 
   void ConfigurarOrigenEther(struct ether_header *psehHeaderEther, struct ifreq *sirDatos)
   {
@@ -127,7 +137,17 @@ typedef unsigned char byte;
  
  }
 
- void ConfigurarBroadcastD_Sock(struct sockaddr_ll *socket_address)
+ void ConfigurarDestinoEther(struct ether_header *psehHeaderEther, byte sbmac[6], )
+ {
+
+   for (int i = 0; i < LEN_MAC; i++)
+   {
+     psehHeaderEther->ether_dhost[i] = sbmac[i];
+   }
+
+ }
+
+ void ConfigurarBroadcast_Sock(struct sockaddr_ll *socket_address)
  {
 
    for (int i = 0; i < LEN_MAC; i++)
@@ -137,7 +157,7 @@ typedef unsigned char byte;
    }
  }
 
- void ConfigurarDestinoSock(struct sockaddr_ll *socket_address, byte sbmac)
+ void ConfigurarDestinoSock(struct sockaddr_ll *socket_address, byte sbmac[6])
  {
 
    for (int i = 0; i < LEN_MAC; i++){
@@ -148,13 +168,61 @@ typedef unsigned char byte;
  }
 
 
-void ReinciarTrama(byte * sbBufferEther[BUF_SIZ], struct ether_header * psehHeaderEther){
- 
-  {
+  void ReinciarTrama(byte *sbBufferEther[BUF_SIZ], struct ether_header *psehHeaderEther)
+ {
 
+   {
     memset(sbBufferEther, 0, BUF_SIZ);
-    psehHeaderEther =  (struct ether_header *)sbBufferEther
-  }
+    psehHeaderEther = (struct ether_header *)sbBufferEther;
+   }
+ }
+
+ void ConfigurarTrama(byte *sbBufferEther, struct ether_header *psehHeaderEther, struct ifreq sirDatos, byte sbmac[6], int *iLenHeader, char scMsj[], int iIndex, int *iLenTotal, (struct ether_header *)sbBufferEther, struct sockaddr_ll socket_address)
+ {
+   ReiniciarTrama(sbBufferEther, psehHeaderEther);
+
+   ConfigurarOrigenEther(psehHeaderEther, sirDatos);
+
+   iLenHeader = sizeof(struct ether_header); // Guardamos la longitud del header
+
+   //Esto podria ser una función
+   if (strlen(scMsj) > ETHER_TYPE) // Checamos la longitud del mensaje
+   {
+     printf("El mensaje debe ser mas corto o incremente ETHER_TYPE\n");
+     close(sockfd);
+     exit(1);
+   }
+
+   for (i = 0; ((scMsj[i]) && (i < ETHER_TYPE)); i++)
+     sbBufferEther[iLenHeader + i] = scMsj[i];
+
+   // Hasta aquí para el mensaje
+
+   //Esto tambien para definir llenar el Buffer con ceros
+   if (i < ETHER_TYPE)
+   {
+     while (i < ETHER_TYPE)
+     {
+       sbBufferEther[iLenHeader + i] = ' ';
+       i++;
+     }
+   }
+   //Como por aquí
+
+   iLenHeader = iLenHeader + i;
+
+   psehHeaderEther->ether_type = htons(ETHER_TYPE);
+
+
+   for (i = 0; i < 4; i++)
+     sbBufferEther[iLenHeader + i] = 0;
+   iLenTotal = iLenHeader + 4;
+
+   /*Procedemos al envio de la trama*/
+   socket_address.sll_ifindex = iIndex;
+   socket_address.sll_halen = ETH_ALEN;
+
+   ConfigurarDestino(socket_address, sbmac)
  }
 
 
@@ -177,9 +245,8 @@ void ReinciarTrama(byte * sbBufferEther[BUF_SIZ], struct ether_header * psehHead
   return iFlag;
 }
 
-void ArmarTrama(){
-  
-}
+
+
 
 int isBroadcast(char *psTrama){
   int i, iFlag=1;
