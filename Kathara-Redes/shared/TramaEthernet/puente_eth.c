@@ -80,9 +80,11 @@
         memcpy(macOrigen, ehRecibido->ether_shost, 6);
         
         // Limpiamos el buffer para la respuesta
-        memset(sbBufferEther, 0, BUF_SIZ);  
+        memset(sbBufferEther, 0, BUF_SIZ);  // <-- pa q te hago funciones si no las usas? corazon
 
         // Configuramos nuestra MAC como origen
+
+        //---------------------- Mismo chow aqui, te hice como 4 funciones de COnfiguraciones ogeis-------------
         psehHeaderEther->ether_shost[0] = (byte)(sirDatos.ifr_hwaddr.sa_data[0]);
         psehHeaderEther->ether_shost[1] = (byte)(sirDatos.ifr_hwaddr.sa_data[1]);
         psehHeaderEther->ether_shost[2] = (byte)(sirDatos.ifr_hwaddr.sa_data[2]);
@@ -91,9 +93,13 @@
         psehHeaderEther->ether_shost[5] = (byte)(sirDatos.ifr_hwaddr.sa_data[5]);
 
         // Configuramos la MAC destino
-        memcpy(psehHeaderEther->ether_dhost, macOrigen, 6);
+        memcpy(psehHeaderEther->ether_dhost, macOrigen, 6); // <--------------------- fakin sameee  
 
         // Configuramos el socket_address una sola vez
+
+        // ---------------- Pero falta agregar el broadcast como  destino, no? pq tas mandando de ti pal otro buei  --------------
+
+        // Aqui tenemos que poner iIndex2, no? Pa q se lo manden a los otros bueis
         memset(&socket_address, 0, sizeof(struct sockaddr_ll));
         socket_address.sll_family = AF_PACKET;
         socket_address.sll_protocol = htons(ETH_P_ALL);
