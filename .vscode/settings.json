@@ -1,6 +1,7 @@
 {
   "files.associations": {
     "*.js": "javascript",
-    "eth.h": "c"
+    "eth.h": "c",
+    "ether.h": "c"
   }
 }

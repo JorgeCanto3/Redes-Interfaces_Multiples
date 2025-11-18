@@ -18,7 +18,7 @@
 #define TRAMA_ETHER_TYPE     (6+6)
 #define TRAMA_PAYLOAD        (6+6+2)
 #define TRAMA_PAYLOAD_SOLICITUD  (6+6+2)
-#define LEN_  
+//#define LEN_  
 #define LEN_MAC              6
 #define LEN_NAME             3
 #define LEN_SOLICITUD        8
@@ -154,12 +154,12 @@ typedef unsigned char byte;
   {
    for (int i = 0; i < LEN_MAC; i++)
    {
-     psehHeaderEther->ether_shost[i] = ((uint8_t *)&sirDatos.ifr_hwaddr.sa_data)[i];
+     psehHeaderEther->ether_shost[i] = ((uint8_t *)&sirDatos->ifr_hwaddr.sa_data)[i];
    }
  
  }
 
- void configurarDestino_Ether(struct ether_header *psehHeaderEther, byte sbmac[6], )
+ void configurarDestino_Ether(struct ether_header *psehHeaderEther, byte sbmac[LEN_MAC] )
  {
    for (int i = 0; i < LEN_MAC; i++)
    {
@@ -171,28 +171,38 @@ typedef unsigned char byte;
  {
    for (int i = 0; i < LEN_MAC; i++)
    {
-     socket_address.sll_addr[i] = (unsigned char)0xFF;
+     socket_address->sll_addr[i] = (unsigned char)0xFF;
    }
  }
 
- void configurarDestino_Socket(struct sockaddr_ll *socket_address, byte sbmac[6])
+ void configurarDestino_Socket(struct sockaddr_ll *socket_address, byte sbmac[LEN_MAC])
  {
    for (int i = 0; i < LEN_MAC; i++){
-     socket_address.sll_addr[i] = sbMac[i];
+     socket_address->sll_addr[i] = sbmac[i];
    }
  }
 
 
-  void reinciarTrama(byte *sbBufferEther[BUF_SIZ], struct ether_header *psehHeaderEther)
+  void reinciarTrama(byte *sbBufferEther[BUF_SIZ])
  {
-  {
-    memset(sbBufferEther, 0, BUF_SIZ);
-    psehHeaderEther = (struct ether_header *)sbBufferEther;
-   }
+  
+    memset(sbBufferEther, 0, BUF_SIZ);   
  }
 
- void configurarTrama(byte *sbBufferEther, struct ether_header *psehHeaderEther, struct ifreq sirDatos, byte sbmac[6], int *iLenHeader, char scMsj[], int iIndex, int *iLenTotal, (struct ether_header *)sbBufferEther, struct sockaddr_ll socket_address)
+ void configurarTrama(
+    byte *sbBufferEther, 
+    struct ether_header *psehHeaderEther,
+    struct ifreq *sirDatos,
+    byte sbmac[6],
+    char scMsj[],
+    int *iLenHeader,
+    int iIndex,
+    int *iLenTotal,
+    int sockfd,
+    struct sockaddr_ll socket_address)
  {
+
+  int i =0;
    reiniciarTrama(sbBufferEther, psehHeaderEther);
 
    configurarOrigen_Ether(psehHeaderEther, sirDatos);
@@ -238,7 +248,7 @@ typedef unsigned char byte;
    socket_address.sll_ifindex = iIndex;
    socket_address.sll_halen = ETH_ALEN;
 
-   ConfigurarDestino(socket_address, sbmac)
+   configurarDestino_Socket(&socket_address, sbmac);
  }
 
 

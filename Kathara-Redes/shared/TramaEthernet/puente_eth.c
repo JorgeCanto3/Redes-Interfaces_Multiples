@@ -11,12 +11,12 @@
    /*La cabecera Ethernet (eh) y sbBufferEther apuntan a lo mismo*/
  
    struct ether_header *psehHeaderEther = (struct ether_header *)sbBufferEther;
-   int iLen, iLenHeader, iLenTotal, iIndex;
+   int iLen, iLenHeader, iLenTotal, iIndex, iIndex2;
     struct sockaddr_ll socket_address;
    int saddr_size; 
    
    struct sockaddr saddr;    
-   struct ifreq sirDatos;
+   struct ifreq sirDatos, sirDatos_Ad;
    int iEtherType;
    char mv_name[3];
    char scMsj[] = "Ahi te va mi mac :) No te pases de alberca!!!";
@@ -43,9 +43,10 @@
 
    /*Ahora obtenemos la MAC de la interface del host*/
    memset(&sirDatos, 0, sizeof(struct ifreq));
+
    for (i=0; argv[1][i]; i++) sirDatos.ifr_name[i] = argv[1][i];
 
-   for (i=0; argv[2][i]; i++) sirDatos.ifr_name[i] = argv[2][i];
+   for (i=0; argv[2][i]; i++) sirDatos_Ad.ifr_name[i] = argv[2][i];
 
    for (i=0; argv[3][i]; i++) mv_name[i] = argv[3][i];
    
@@ -53,7 +54,8 @@
    if (ioctl(sockfd, SIOCGIFINDEX, &sirDatos) < 0) perror("SIOCGIFINDEX");
    iIndex = sirDatos.ifr_ifindex;
 
-   if (ioctl(sockfd, SIOCGIFHWADDR, &sirDatos) < 0) perror("SIOCGIFHWADDR");
+   if (ioctl(sockfd, SIOCGIFHWADDR, &sirDatos2) < 0) perror("SIOCGIFHWADDR");
+   iIndex2 = sirDatos_Ad.ifr_ifindex;
    
    /*Se imprime la MAC del host*/
    printf ("Direccion MAC de la interfaz de entrada: %02x:%02x:%02x:%02x:%02x:%02x\n",
@@ -160,7 +162,7 @@
         configurarBroadcast_Socket(&socket_address);
         
         char *mensaje = "pc5";
-        configurarTrama(sbBufferEther, psehHeaderEther, sirDatos, sbMac, &iLenHeader, mensaje, iIndex, &iLenTotal, (struct ether_header *)sbBufferEther, socket_address);
+        configurarTrama(sbBufferEther, psehHeaderEther, &sirDatos, sbMac, mensaje ,&iLenHeader, iIndex, &iLenTotal,sockfd, socket_address);
         printf("\nBROADCAST buscando pc5...\n");
         iLen = sendto(sockfd, sbBufferEther, iLenTotal, 0, (struct sockaddr *)&socket_address, sizeof(struct sockaddr_ll));
         if (iLen < 0)
@@ -187,9 +189,9 @@
 
         configurarDestino_Ether(psehHeaderEtherR, sbMac);
         configurarDestino_Socket(&socket_address, mac);
-        configurarOrigen_Ether(psehHeaderEther, sirDatos);
+        configurarOrigen_Ether(psehHeaderEther, &sirDatos);
 
-        configurarTrama(sbBufferEtherR, psehHeaderEther, sirDatos, sbMac, &iLenHeader, scMsj, iIndex, &iLenTotal, (struct ether_header *)sbBufferEther, socket_address);
+        configurarTrama(sbBufferEtherR, psehHeaderEther, &sirDatos, sbMac, scMsj,&iLenHeader,  iIndex, &iLenTotal, sockfd, socket_address);
 
         printf("Reenviando trama a pc5...\n");
         iLen = sendto(sockfd, sbBufferEtherR, iLenTotal, 0, (struct sockaddr *)&socket_address, sizeof(struct sockaddr_ll));
