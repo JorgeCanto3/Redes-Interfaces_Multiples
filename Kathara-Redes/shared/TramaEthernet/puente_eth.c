@@ -76,7 +76,7 @@
         
         // Guardamos la MAC origen del broadcast
         struct ether_header *ehRecibido = (struct ether_header *)sbBufferEther;
-        unsigned char macOrigen[6];
+        byte *macOrigen[6];
         memcpy(macOrigen, ehRecibido->ether_shost, 6);
         
         // Limpiamos el buffer para la respuesta
@@ -85,6 +85,7 @@
         // Configuramos nuestra MAC como origen
 
         //---------------------- Mismo chow aqui, te hice como 4 funciones de COnfiguraciones ogeis-------------
+        /*
         psehHeaderEther->ether_shost[0] = (byte)(sirDatos.ifr_hwaddr.sa_data[0]);
         psehHeaderEther->ether_shost[1] = (byte)(sirDatos.ifr_hwaddr.sa_data[1]);
         psehHeaderEther->ether_shost[2] = (byte)(sirDatos.ifr_hwaddr.sa_data[2]);
@@ -94,18 +95,21 @@
 
         // Configuramos la MAC destino
         memcpy(psehHeaderEther->ether_dhost, macOrigen, 6); // <--------------------- fakin sameee  
-
+        */
+        configurarOrigen_Ether(psehHeaderEther, &sirDatos);
+        configurarDestino_Ether(psehHeaderEther, macOrigen);
         // Configuramos el socket_address una sola vez
 
         // ---------------- Pero falta agregar el broadcast como  destino, no? pq tas mandando de ti pal otro buei  --------------
 
-        // Aqui tenemos que poner iIndex2, no? Pa q se lo manden a los otros bueis
         memset(&socket_address, 0, sizeof(struct sockaddr_ll));
         socket_address.sll_family = AF_PACKET;
         socket_address.sll_protocol = htons(ETH_P_ALL);
         socket_address.sll_ifindex = iIndex;
         socket_address.sll_halen = ETH_ALEN;
-        memcpy(socket_address.sll_addr, macOrigen, 6);
+       
+        //memcpy(socket_address.sll_addr, macOrigen, 6);
+        configurarDestino_Socket(&socket_address, macOrigen);
 
         // Configuramos el payload
         iLenHeader = sizeof(struct ether_header);
@@ -127,20 +131,18 @@
         iLenTotal = iLenHeader + 4;
 
         printf("MAC origen (nuestra): %02x:%02x:%02x:%02x:%02x:%02x\n",
-            (byte)(sirDatos.ifr_hwaddr.sa_data[0]),
-            (byte)(sirDatos.ifr_hwaddr.sa_data[1]),
-            (byte)(sirDatos.ifr_hwaddr.sa_data[2]),
-            (byte)(sirDatos.ifr_hwaddr.sa_data[3]),
-            (byte)(sirDatos.ifr_hwaddr.sa_data[4]),
-            (byte)(sirDatos.ifr_hwaddr.sa_data[5]));
+          (byte)(sirDatos.ifr_hwaddr.sa_data[0]),
+          (byte)(sirDatos.ifr_hwaddr.sa_data[1]),
+          (byte)(sirDatos.ifr_hwaddr.sa_data[2]),
+          (byte)(sirDatos.ifr_hwaddr.sa_data[3]),
+          (byte)(sirDatos.ifr_hwaddr.sa_data[4]),
+          (byte)(sirDatos.ifr_hwaddr.sa_data[5]));
 
         printf("Enviando respuesta a MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
-            macOrigen[0], macOrigen[1], macOrigen[2],
-            macOrigen[3], macOrigen[4], macOrigen[5]);
+          macOrigen[0], macOrigen[1], macOrigen[2],
+          macOrigen[3], macOrigen[4], macOrigen[5]);
 
-        iLen = sendto(sockfd, sbBufferEther, iLenTotal, 0, 
-                     (struct sockaddr*)&socket_address, 
-                     sizeof(struct sockaddr_ll));
+        iLen = sendto(sockfd, sbBufferEther, iLenTotal, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll));
         
             if (iLen < 0) {
                 perror("Error enviando respuesta");
