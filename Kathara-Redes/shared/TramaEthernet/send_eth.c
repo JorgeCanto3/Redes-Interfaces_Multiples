@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 
   scMsj = "pc3";
 
-  configurarTrama(sbBufferEther, psehHeaderEther, &sirDatos, sbMac,  scMsj,&iLenHeader, iIndex, &iLenTotal, sockfd, socket_address);
+  configurarTrama(sbBufferEther, psehHeaderEther, &sirDatos, sbMac,  scMsj,&iLenHeader, iIndex, &iLenTotal, sockfd, &socket_address);
   /*Procedemos al envio de la trama*/
   memset(&socket_address, 0, sizeof(struct sockaddr_ll));
   socket_address.sll_family = AF_PACKET;
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
   socket_address.sll_ifindex = iIndex;
   socket_address.sll_halen = ETH_ALEN;
 
-  configurarBroadcast_Socket(&socket_address);
+  configurarBroadcast_Socket(&socket_address);  
 
       printf("\nEnviando broadcast solicitando MAC de %s...\n", mv_name);
   iLen = sendto(sockfd, sbBufferEther, iLenTotal, 0, (struct sockaddr *)&socket_address, sizeof(struct sockaddr_ll));
@@ -159,12 +159,11 @@ int main(int argc, char *argv[])
   }
 
   scMsj = "pc5";
-
-  reinciarTrama(sbBufferEther);                                                             
+                                                          
   psehHeaderEther = (struct ether_header *)sbBufferEther;
 
 
-  configurarTrama(sbBufferEther, psehHeaderEther, &sirDatos, sbMac, scMsj, &iLenHeader, iIndex, &iLenTotal, sockfd, socket_address);
+  configurarTrama(sbBufferEther, psehHeaderEther, &sirDatos, sbMac, scMsj, &iLenHeader, iIndex, &iLenTotal, sockfd, &socket_address);
 
 
   iLen = sendto(sockfd, sbBufferEther, iLenTotal, 0, (struct sockaddr *)&socket_address, sizeof(struct sockaddr_ll));

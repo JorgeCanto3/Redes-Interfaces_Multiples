@@ -10,6 +10,9 @@
 #include <net/if.h>
 #include <netinet/ether.h>
 #include <unistd.h>
+#include <linux/if_ether.h>
+#include <net/ethernet.h>   // o <linux/if_ether.h> según la distro
+
 
  
 #define BUF_SIZ              2000  /*Con 2000 bytes son suficientes para la trama, ya que va de 64 a 1518*/
@@ -199,11 +202,13 @@ typedef unsigned char byte;
     int iIndex,
     int *iLenTotal,
     int sockfd,
-    struct sockaddr_ll socket_address)
+    struct sockaddr_ll *socket_address)
  {
 
   int i =0;
-   reiniciarTrama(sbBufferEther, psehHeaderEther);
+   reiniciarTrama(sbBufferEther);
+   psehHeaderEther = (struct ether_header *)sbBufferEther;
+
 
    configurarOrigen_Ether(psehHeaderEther, sirDatos);
 
@@ -220,7 +225,7 @@ typedef unsigned char byte;
    }
 
    for (i = 0; ((scMsj[i]) && (i < ETHER_TYPE)); i++)
-     sbBufferEther[iLenHeader + i] = scMsj[i];
+     sbBufferEther[*iLenHeader + i] = scMsj[i];
 
    // Hasta aquí para el mensaje
 
@@ -229,7 +234,7 @@ typedef unsigned char byte;
    {
      while (i < ETHER_TYPE)
      {
-       sbBufferEther[iLenHeader + i] = ' ';
+       sbBufferEther[*iLenHeader + i] = ' ';
        i++;
      }
    }
@@ -241,14 +246,14 @@ typedef unsigned char byte;
 
 
    for (i = 0; i < 4; i++)
-     sbBufferEther[iLenHeader + i] = 0;
+     sbBufferEther[*iLenHeader + i] = 0;
    iLenTotal = iLenHeader + 4;
 
    /*Procedemos al envio de la trama*/
-   socket_address.sll_ifindex = iIndex;
-   socket_address.sll_halen = ETH_ALEN;
+   socket_address->sll_ifindex = iIndex;
+   socket_address->sll_halen = ETH_ALEN;
 
-   configurarDestino_Socket(&socket_address, sbmac);
+   configurarDestino_Socket(socket_address, sbmac);
  }
 
 

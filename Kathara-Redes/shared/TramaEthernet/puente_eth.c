@@ -54,7 +54,7 @@
    if (ioctl(sockfd, SIOCGIFINDEX, &sirDatos) < 0) perror("SIOCGIFINDEX");
    iIndex = sirDatos.ifr_ifindex;
 
-   if (ioctl(sockfd, SIOCGIFHWADDR, &sirDatos2) < 0) perror("SIOCGIFHWADDR");
+   if (ioctl(sockfd, SIOCGIFHWADDR, &sirDatos_Ad) < 0) perror("SIOCGIFHWADDR");
    iIndex2 = sirDatos_Ad.ifr_ifindex;
    
    /*Se imprime la MAC del host*/
@@ -162,7 +162,7 @@
         configurarBroadcast_Socket(&socket_address);
         
         char *mensaje = "pc5";
-        configurarTrama(sbBufferEther, psehHeaderEther, &sirDatos, sbMac, mensaje ,&iLenHeader, iIndex, &iLenTotal,sockfd, socket_address);
+        configurarTrama(sbBufferEther, psehHeaderEther, &sirDatos_Ad, sbMac, mensaje ,&iLenHeader, iIndex2, &iLenTotal,sockfd, &socket_address);
         printf("\nBROADCAST buscando pc5...\n");
         iLen = sendto(sockfd, sbBufferEther, iLenTotal, 0, (struct sockaddr *)&socket_address, sizeof(struct sockaddr_ll));
         if (iLen < 0)
@@ -175,8 +175,9 @@
 
         printf("Esperando MAC pc5...\n");
 
-        memset(sbBufferEther, 0, BUF_SIZ);
-        memset(&socket_address, 0, sizeof(struct sockaddr_ll));
+        memset(sbBufferEther, 0, BUF_SIZ);// <--- Pa eso hice la de ReiniciarTrama
+        
+        memset(&socket_address, 0, sizeof(struct sockaddr_ll)); // <--- Pa q es?
 
         iTramaLen = recvfrom(sockfd, sbBufferEther, BUF_SIZ, 0, &saddr, (socklen_t *)(&saddr_size));
         if (iTramaLen < 0) {
@@ -191,7 +192,7 @@
         configurarDestino_Socket(&socket_address, mac);
         configurarOrigen_Ether(psehHeaderEther, &sirDatos);
 
-        configurarTrama(sbBufferEtherR, psehHeaderEther, &sirDatos, sbMac, scMsj,&iLenHeader,  iIndex, &iLenTotal, sockfd, socket_address);
+        configurarTrama(sbBufferEtherR, psehHeaderEther, &sirDatos, sbMac, scMsj,&iLenHeader,  iIndex, &iLenTotal, sockfd, &socket_address);
 
         printf("Reenviando trama a pc5...\n");
         iLen = sendto(sockfd, sbBufferEtherR, iLenTotal, 0, (struct sockaddr *)&socket_address, sizeof(struct sockaddr_ll));
