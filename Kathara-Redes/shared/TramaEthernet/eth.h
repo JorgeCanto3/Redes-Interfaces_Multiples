@@ -16,11 +16,12 @@
 #define TRAMA_DESTINATION    0
 #define TRAMA_SOURCE         6   
 #define TRAMA_ETHER_TYPE     (6+6)
-#define TRAMA_PAYLOAD        (6+6+2)  
+#define TRAMA_PAYLOAD        (6+6+2)
+#define TRAMA_PAYLOAD_SOLICITUD  (6+6+2)
+#define LEN_  
 #define LEN_MAC              6
 #define LEN_NAME             3
-#define LEN_ARP             3
-
+#define LEN_SOLICITUD        8
 
 
 /*En realidad podriamos enviar cualquier trama con payload entre 43 y 1500, */
@@ -86,7 +87,7 @@ typedef unsigned char byte;
    return (iFlag);
  }
 
- char *iSacarMAC(char *psTrama)
+ char *iSacarMAC_Trama(char *psTrama)
  {
     struct ether_header *eh = (struct ether_header *)psTrama;
     char* mac = malloc(LEN_MAC * sizeof(char));
@@ -97,11 +98,32 @@ typedef unsigned char byte;
          (unsigned char)eh->ether_shost[3],
          (unsigned char)eh->ether_shost[4],
          (unsigned char)eh->ether_shost[5]);
-   
-    for(int i = 0; i < LEN_MAC; i++) {
-       mac[i] = eh->ether_shost[i];
+
+    for (int i = 0; i < LEN_MAC; i++)
+    {
+      mac[i] = psTrama[TRAMA_PAYLOAD+i];
     }
     return mac;
+ }
+
+ char *iSacarMAC(char *psTrama)
+ {
+   struct ether_header *eh = (struct ether_header *)psTrama;
+
+   char *mac = malloc(LEN_MAC * sizeof(char));
+   printf("Extrayendo MAC origen: %02x:%02x:%02x:%02x:%02x:%02x\n",
+          (unsigned char)eh->ether_shost[0],
+          (unsigned char)eh->ether_shost[1],
+          (unsigned char)eh->ether_shost[2],
+          (unsigned char)eh->ether_shost[3],
+          (unsigned char)eh->ether_shost[4],
+          (unsigned char)eh->ether_shost[5]);
+
+   for (int i = 0; i < LEN_MAC; i++)
+   {
+     mac[i] = eh->ether_shost[i];
+   }
+   return mac;
  }
 
  void configurarBroadcast_Ether(struct ether_header *psehHeaderEther)
@@ -120,7 +142,7 @@ typedef unsigned char byte;
   /* 
   No lo agregue pero podemos crearlo para no tener tanto codigo dentro de la Función ConfigurarTrama 
   
-    ConfigurarSocket(struct sockaddr_ll socket_address){
+    ConfigurarSocket(struct sockaddr_ll socket_address, int Index){
       socket_address.sll_ifindex = iIndex;
       socket_address.sll_halen = ETH_ALEN;
       ConfigurarDestinoSock(socke_address,sbmac)
@@ -139,39 +161,31 @@ typedef unsigned char byte;
 
  void configurarDestino_Ether(struct ether_header *psehHeaderEther, byte sbmac[6], )
  {
-
    for (int i = 0; i < LEN_MAC; i++)
    {
      psehHeaderEther->ether_dhost[i] = sbmac[i];
    }
-
  }
 
  void configurarBroadcast_Socket(struct sockaddr_ll *socket_address)
  {
-
    for (int i = 0; i < LEN_MAC; i++)
    {
-
      socket_address.sll_addr[i] = (unsigned char)0xFF;
    }
  }
 
  void configurarDestino_Socket(struct sockaddr_ll *socket_address, byte sbmac[6])
  {
-
    for (int i = 0; i < LEN_MAC; i++){
-
      socket_address.sll_addr[i] = sbMac[i];
    }
-
  }
 
 
   void reinciarTrama(byte *sbBufferEther[BUF_SIZ], struct ether_header *psehHeaderEther)
  {
-
-   {
+  {
     memset(sbBufferEther, 0, BUF_SIZ);
     psehHeaderEther = (struct ether_header *)sbBufferEther;
    }
@@ -250,6 +264,8 @@ typedef unsigned char byte;
 
 
 
+
+
 int isBroadcast(char *psTrama){
   int i, iFlag=1;
   printf("Verificando si es broadcast. MAC destino: ");
@@ -263,3 +279,18 @@ int isBroadcast(char *psTrama){
   printf(" -> %s\n", iFlag ? "SI ES BROADCAST" : "NO ES BROADCAST");
   return iFlag;
 }
+
+char sacarNombreInterfaz(char *psTrama){
+  char nombre[LEN_NAME+1];
+  int i;
+  for(i=0; i<LEN_NAME; i++) {
+    nombre[i] = psTrama[TRAMA_PAYLOAD+i];
+  }
+  nombre[LEN_NAME] = '\0'; // Null-terminate the string
+  printf("Nombre de interfaz extraido del payload: %s\n", nombre);
+  return nombre;
+}
+
+
+
+

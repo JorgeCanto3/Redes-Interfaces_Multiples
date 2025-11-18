@@ -1,0 +1,4 @@
+1.  send envia broadcast buscando a pc5 
+2.  pc3 recibe el broadcast y envia un broadcast a su otra interface
+3.  pc5 lo recibe y envia su mac a pc3 
+4.  pc3 lo envia a quien lo pidio. 
