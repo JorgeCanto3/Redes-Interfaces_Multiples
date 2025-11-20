@@ -81,39 +81,27 @@ typedef unsigned char byte;
    
        printf ("\nFCS:      %d\n\n", *piEtherType); 
  }
- 
+ /*
  int iLaTramaEsParaMi (char *psTrama, struct ifreq *psirDatos)
  {
    int i, iFlag;
    for (i=0, iFlag=1; i<LEN_MAC; i++)
      if (psirDatos->ifr_hwaddr.sa_data[i]!=psTrama[TRAMA_DESTINATION+i]) iFlag = 0;
-   return (iFlag);
+   
+    printf("La trama %s para mi interfaz\n", iFlag ? "es" : "no es");
+     return (iFlag);
  }
+  */
 
- char *iSacarMAC_Trama(char *psTrama)
- {
-    struct ether_header *eh = (struct ether_header *)psTrama;
-    char* mac = malloc(LEN_MAC * sizeof(char));
-    printf("Extrayendo MAC origen: %02x:%02x:%02x:%02x:%02x:%02x\n",
-         (unsigned char)eh->ether_shost[0],
-         (unsigned char)eh->ether_shost[1],
-         (unsigned char)eh->ether_shost[2],
-         (unsigned char)eh->ether_shost[3],
-         (unsigned char)eh->ether_shost[4],
-         (unsigned char)eh->ether_shost[5]);
 
-    for (int i = 0; i < LEN_MAC; i++)
-    {
-      mac[i] = psTrama[TRAMA_PAYLOAD+i];
-    }
-    return mac;
- }
 
  char *iSacarMAC(char *psTrama)
  {
    struct ether_header *eh = (struct ether_header *)psTrama;
 
+   
    char *mac = malloc(LEN_MAC * sizeof(char));
+   
    printf("Extrayendo MAC origen: %02x:%02x:%02x:%02x:%02x:%02x\n",
           (unsigned char)eh->ether_shost[0],
           (unsigned char)eh->ether_shost[1],
@@ -137,8 +125,7 @@ typedef unsigned char byte;
      psehHeaderEther->ether_dhost[i] = (unsigned char)0xFF;
    }
 
-   printf("Broadcast Asignado a la MAC de destino!");
-
+   printf("\nBroadcast Asignado a la MAC de destino!");
 
   }
 
@@ -176,6 +163,8 @@ typedef unsigned char byte;
    {
      socket_address->sll_addr[i] = (unsigned char)0xFF;
    }
+
+
  }
 
  void configurarDestino_Socket(struct sockaddr_ll *socket_address, byte sbmac[LEN_MAC])
@@ -186,7 +175,7 @@ typedef unsigned char byte;
  }
 
 
-  void reinciarTrama(byte *sbBufferEther[BUF_SIZ])
+  void reinciarTrama(byte *sbBufferEther)
  {
   
     memset(sbBufferEther, 0, BUF_SIZ);   
@@ -206,15 +195,13 @@ typedef unsigned char byte;
  {
 
   int i =0;
-   reiniciarTrama(sbBufferEther);
-   psehHeaderEther = (struct ether_header *)sbBufferEther;
+
 
 
    configurarOrigen_Ether(psehHeaderEther, sirDatos);
-
    configurarDestino_Ether(psehHeaderEther, sbmac);
 
-   iLenHeader = sizeof(struct ether_header); // Guardamos la longitud del header
+   *iLenHeader = sizeof(struct ether_header); // Guardamos la longitud del header
 
    //Esto podria ser una función
    if (strlen(scMsj) > ETHER_TYPE) // Checamos la longitud del mensaje
@@ -223,6 +210,8 @@ typedef unsigned char byte;
      close(sockfd);
      exit(1);
    }
+
+   
 
    for (i = 0; ((scMsj[i]) && (i < ETHER_TYPE)); i++)
      sbBufferEther[*iLenHeader + i] = scMsj[i];
@@ -240,37 +229,95 @@ typedef unsigned char byte;
    }
    //Como por aquí
 
-   iLenHeader = iLenHeader + i;
+   *iLenHeader = *iLenHeader + i;
 
    psehHeaderEther->ether_type = htons(ETHER_TYPE);
 
 
    for (i = 0; i < 4; i++)
      sbBufferEther[*iLenHeader + i] = 0;
-   iLenTotal = iLenHeader + 4;
+   *iLenTotal = *iLenHeader + 4;
 
    /*Procedemos al envio de la trama*/
    socket_address->sll_ifindex = iIndex;
    socket_address->sll_halen = ETH_ALEN;
 
    configurarDestino_Socket(socket_address, sbmac);
+
+   //vImprimeTrama(sbBufferEther);
+ }
+
+  void configurarTrama_Broadcast(
+        byte *sbBufferEther, 
+        struct ether_header *psehHeaderEther,
+        struct ifreq *sirDatos,
+        char scMsj[],
+        int *iLenHeader,
+        int iIndex,
+        int *iLenTotal,
+        int sockfd,
+        struct sockaddr_ll *socket_address)
+    {
+
+  int i =0;
+
+
+
+   configurarOrigen_Ether(psehHeaderEther, sirDatos);
+
+   configurarBroadcast_Ether(psehHeaderEther);
+
+   *iLenHeader = sizeof(struct ether_header); // Guardamos la longitud del header
+
+   //Esto podria ser una función
+   if (strlen(scMsj) > ETHER_TYPE) // Checamos la longitud del mensaje
+   {
+     printf("El mensaje debe ser mas corto o incremente ETHER_TYPE\n");
+     close(sockfd);
+     exit(1);
+   }
+
+   
+
+   for (i = 0; ((scMsj[i]) && (i < ETHER_TYPE)); i++)
+     sbBufferEther[*iLenHeader + i] = scMsj[i];
+
+   // Hasta aquí para el mensaje
+
+   //Esto tambien para definir llenar el Buffer con ceros
+   if (i < ETHER_TYPE)
+   {
+     while (i < ETHER_TYPE)
+     {
+       sbBufferEther[*iLenHeader + i] = ' ';
+       i++;
+     }
+   }
+   //Como por aquí
+
+   *iLenHeader = *iLenHeader + i;
+
+   psehHeaderEther->ether_type = htons(ETHER_TYPE);
+
+
+   for (i = 0; i < 4; i++)
+     sbBufferEther[*iLenHeader + i] = 0;
+   *iLenTotal = *iLenHeader + 4;
+
+   /*Procedemos al envio de la trama*/
+   socket_address->sll_ifindex = iIndex;
+   socket_address->sll_halen = ETH_ALEN;
+
+   configurarBroadcast_Socket(socket_address);
  }
 
 
 
  int isParaMi(char *psTrama, char *pcName){
-  int i, iFlag=1;
-  printf("Verificando mensaje para %s. Contenido del payload: ", pcName);
-  for(i=0; i<3; i++) {
-    printf("%c", psTrama[TRAMA_PAYLOAD+i]);
-  }
-  printf("\n");
-  
+  int i, iFlag=1; 
   for (i=0; i<3; i++) {
     if(psTrama[TRAMA_PAYLOAD+i] != pcName[i]) {
       iFlag = 0;
-      printf("No coincide en posición %d: recibido '%c' esperado '%c'\n", 
-             i, psTrama[TRAMA_PAYLOAD+i], pcName[i]);
     }
   }
   return iFlag;
@@ -283,20 +330,77 @@ typedef unsigned char byte;
 
 int isBroadcast(char *psTrama){
   int i, iFlag=1;
-  printf("Verificando si es broadcast. MAC destino: ");
+  
+  for (i=0; i<LEN_MAC; i++){
+    unsigned char byte = (unsigned char)psTrama[TRAMA_DESTINATION+i];
+    if (byte != 0xFF) {
+      iFlag = 0;
+    }
+  }
+
+  if (iFlag == 1) {
+    printf("MAC destino: ");
+    for (i=0; i<LEN_MAC; i++){
+      unsigned char byte = (unsigned char)psTrama[TRAMA_DESTINATION+i];
+      printf("%02x ", byte);
+
+    }
+      printf(" -> %s\n", iFlag ? "SI ES BROADCAST" : " ");
+  }
+  
+  return iFlag;
+}
+
+
+int iLaTramaEsParaMi (char *psTrama, struct ifreq *psirDatos)
+ {
+   int i, iFlag;
+   for (i=0, iFlag=1; i<LEN_MAC; i++)
+     if (psirDatos->ifr_hwaddr.sa_data[i]!=psTrama[TRAMA_DESTINATION+i]) iFlag = 0;
+   
+    return (iFlag);
+ }
+
+/*
+int ChecarTrama(char *psTrama, char *pcName, struct ifreq *psirDatos){
+  int i, iFlag=1;
   for (i=0; i<LEN_MAC; i++){
     unsigned char byte = (unsigned char)psTrama[TRAMA_DESTINATION+i];
     printf("%02x ", byte);
     if (byte != 0xFF) {
       iFlag = 0;
     }
-  }
-  printf(" -> %s\n", iFlag ? "SI ES BROADCAST" : "NO ES BROADCAST");
-  return iFlag;
-}
 
-char sacarNombreInterfaz(char *psTrama){
-  char nombre[LEN_NAME+1];
+  if (iFlag == 1){
+    printf("El Mensaje recibido es BROADCAST" );
+  }else {
+    for (i=0; i<LEN_MAC; i++){
+      if(psTrama[TRAMA_PAYLOAD+i] != pcName[i]) {
+      iFlag = 0;
+      printf("No coincide en posición %d: recibido '%c' esperado '%c'\n", 
+             i, psTrama[TRAMA_PAYLOAD+i], pcName[i]);
+    }
+    }
+  }
+  
+  for (i=0; i<3; i++) {
+    if(psTrama[TRAMA_PAYLOAD+i] != pcName[i]) {
+      iFlag = 0;
+      printf("No coincide en posición %d: recibido '%c' esperado '%c'\n", 
+             i, psTrama[TRAMA_PAYLOAD+i], pcName[i]);
+    }
+  }
+  return iFlag;
+  }
+  
+}
+*/
+
+
+
+
+char *sacarNombreInterfaz(char *psTrama){
+  static char nombre[LEN_NAME+1];
   int i;
   for(i=0; i<LEN_NAME; i++) {
     nombre[i] = psTrama[TRAMA_PAYLOAD+i];

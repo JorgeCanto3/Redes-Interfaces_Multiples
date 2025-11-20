@@ -19,7 +19,7 @@
    struct ifreq sirDatos;
    int iEtherType;
    char mv_name[3];
-   char scMsj[] = "Ahi te va mi mac :) No te pases de alberca!!!";
+   char scMsj[100];
 
    if (argc!=3)
    {
@@ -53,6 +53,9 @@
 
    if (ioctl(sockfd, SIOCGIFHWADDR, &sirDatos) < 0) perror("SIOCGIFHWADDR");
    
+    memset(sbBufferEther, 0, BUF_SIZ);
+    psehHeaderEther = (struct ether_header *)sbBufferEther;
+
    /*Se imprime la MAC del host*/
    printf ("Direccion MAC de la interfaz de entrada: %02x:%02x:%02x:%02x:%02x:%02x\n",
            (byte)(sirDatos.ifr_hwaddr.sa_data[0]), (byte)(sirDatos.ifr_hwaddr.sa_data[1]),
@@ -64,11 +67,12 @@
    { /*Capturando todos los paquetes*/   
        saddr_size = sizeof saddr;
        iTramaLen = recvfrom(sockfd, sbBufferEther, BUF_SIZ, 0, &saddr, (socklen_t *)(&saddr_size));
-     
-      char* mac = iSacarMAC(sbBufferEther);
-
-      if (isBroadcast(sbBufferEther) && isParaMi(sbBufferEther, mv_name)) {
-        printf("\nRecibido broadcast solicitando MAC para %s\n", mv_name);
+       
+       
+       if (isBroadcast(sbBufferEther) && isParaMi(sbBufferEther, mv_name)) {
+          printf("\n\n---------- Nuevo Broadcast Recibido --------------\n" );      
+          char* mac = iSacarMAC(sbBufferEther);
+          printf("\nRecibido broadcast solicitando MAC para %s\n\n", mv_name);
         
         // Guardamos la MAC origen del broadcast
         struct ether_header *ehRecibido = (struct ether_header *)sbBufferEther;
@@ -97,6 +101,8 @@
         socket_address.sll_halen = ETH_ALEN;
         memcpy(socket_address.sll_addr, macOrigen, 6);
 
+        memset(scMsj, 0, sizeof(scMsj));
+        strcpy(scMsj,"Que onda, que paso! Te mando mi mac" );
         // Configuramos el payload
         iLenHeader = sizeof(struct ether_header);
         for (i=0; ((scMsj[i])&&(i<ETHER_TYPE)); i++) 
@@ -142,6 +148,9 @@
      /*Recibe todo lo que llegue. Llegara el paquete a otras capas dentro del host?*/   
      if (iLaTramaEsParaMi(sbBufferEther, &sirDatos))
      {
+        printf("\n\n---------- Nuevo Mensaje Recibido --------------\n" );      
+
+       printf("\nTrama recibida para mi interfaz :D\n");
        printf ("\nContenido de la trama recibida:\n");    
        vImprimeTrama (sbBufferEther);
      }
